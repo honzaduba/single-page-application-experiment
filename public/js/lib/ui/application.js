@@ -1,15 +1,24 @@
 // Application.js
+
 import { Component } from "./component.js";
 import { defineElement as el, createView } from "./rendering/domvm.js";
+import { Router } from "./routing/router.js";
 
 export class Application extends Component {
 
-    constructor({ authService, apiService }) {
+    constructor({ authService, apiService, routes }) {
 
         super({}); // Application nemá parent
 
         this._authService = authService;
         this._apiService = apiService;
+
+        this.router = new Router({
+            app: this,
+            authService,
+            routes,
+            onRouteChange: (routeMatch) => this._handleRouteChange(routeMatch)
+        });
 
         this._vm = null;          // domvm viewmodel
         this._rootElement = null; // DOM node
@@ -37,8 +46,56 @@ export class Application extends Component {
         return this._apiService;
     }
 
-    start() {
-        // do nothing
+    start(rootElement) {
+        this.mount(rootElement);
+        this.render();
+    }
+
+    async _handleRouteChange(routeMatch) {
+
+        if (routeMatch.notFound) {
+            // TODO: 404 modul
+            this.currentModule = null;
+            this.invalidate();
+            return;
+        }
+
+        const def = routeMatch.def;
+
+        if (!def) {
+            this.currentModule = null;
+            this.invalidate();
+            return;
+        }
+
+        // lazy import modulu podle routeDef.module + export
+        const modulePath = def.module;
+        const exportName = def.export || 'default';
+
+        try {
+            const modFile = await import(modulePath);
+            const ModuleClass = modFile[exportName];
+
+            if (!ModuleClass) {
+                console.error(`Export "${exportName}" not found in ${modulePath}`);
+                return;
+            }
+
+            const modInstance = new ModuleClass(this);
+            this.currentModule = modInstance;
+
+            if (typeof modInstance.enter === 'function') {
+                await modInstance.enter({
+                    params: routeMatch.params,
+                    query: routeMatch.query
+                });
+            }
+
+            this.invalidate();
+        } catch (err) {
+            console.error('Failed to load module for route:', def.name, err);
+            // TODO: error modul / stránka
+        }
     }
 
     /**
