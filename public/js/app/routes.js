@@ -13,7 +13,7 @@ const routes = [
         name: 'user-profile',
         path: '/users/{id:num}/profile',
         module: '/app/modules/user-profile-module.js',
-        export: 'UserProfileModule', // default by mohl být 'default', když nepřidáš
+        export: 'UserProfileModule',
         privileges: ['open', 'browse', 'edit'],
         public: false,
         title: 'Profil uživatele'

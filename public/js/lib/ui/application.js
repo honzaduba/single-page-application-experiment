@@ -26,12 +26,15 @@ export class Application extends Component {
 
         // auth eventy
         this._authService.onLogin(user => {
-            this.showMain(user);
+            // uživatel má nová práva → reset
+            this.router.resetToDefaultRoute();
         });
 
         this._authService.onLogout(() => {
-            this.showLogin();
+            // po logoutu znovu navolíme první public/accessible routu
+            this.router.resetToDefaultRoute();
         });
+        
     }
 
     getApp() {
