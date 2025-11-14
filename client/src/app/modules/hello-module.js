@@ -1,9 +1,11 @@
 import { Module } from '../../lib/ui/module.js';
-import { defineElement as el } from '../../lib/ui/rendering/domvm.js';
+import { defineElement } from 'domvm';
 
 export class HelloModule extends Module {
 
     render(vm) {
+
+        const el = defineElement;
 
         return el('div', [
             el('h1', [

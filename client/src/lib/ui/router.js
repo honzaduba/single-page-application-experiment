@@ -119,8 +119,7 @@ export class Router {
     }
 
     /**
-     * Najde první routu, na kterou má uživatel přístup
-     * (bere aktuální stav authService).
+     * Najde první routu, na kterou má uživatel přístup (bere aktuální stav authService).
      */
     _findFirstAccessibleRoute() {
         for (const r of this.routes) {

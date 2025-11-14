@@ -1,9 +1,13 @@
 // Application.js
 
+import { createView, defineElement } from 'domvm';
 import { Component } from './component.js';
-import { defineElement as el, createView } from './rendering/domvm.js';
-import { Router } from './routing/router.js';
-import { config } from '../../config.js';
+import { Router } from './router.js';
+
+const routeModuleLoaders = {
+    ...import.meta.glob('../../app/modules/**/*-module.js'),
+    ...import.meta.glob('../../lib/modules/**/*-module.js')
+};
 
 export class Application extends Component {
 
@@ -70,7 +74,6 @@ export class Application extends Component {
     async _handleRouteChange(routeMatch) {
 
         if (routeMatch.notFound) {
-            // TODO: 404 modul
             this.currentModule = null;
             this.invalidate();
             return;
@@ -84,17 +87,31 @@ export class Application extends Component {
             return;
         }
 
-        // lazy import modulu podle routeDef.module + export
-        const modulePath = config.codeBasePath + def.module;
         const exportName = def.export || 'default';
 
+        // def.module je např. '/app/modules/login-module'
+        // application.js leží v src/lib/ui → přidáme ../.. a .js
+        let moduleKey = `../..${def.module}`;
+        if (!moduleKey.endsWith('.js')) {
+            moduleKey += '.js';
+        }
+
         try {
-            const modFile = await import(modulePath);
+            const loader = routeModuleLoaders[moduleKey];
+
+            if (!loader) {
+                console.error(`Route module "${moduleKey}" not found in import.meta.glob registry.`);
+                this.currentModule = null;
+                this.invalidate();
+                return;
+            }
+
+            const modFile = await loader();
             const ModuleClass = modFile[exportName];
 
             if (!ModuleClass) {
-                console.error(`Export "${exportName}" not found in ${modulePath}`);
-                return;
+                console.error(`Export "${exportName}" not found in ${moduleKey}`);
+                return; 
             }
 
             const modInstance = new ModuleClass(this);
@@ -105,14 +122,21 @@ export class Application extends Component {
                     params: routeMatch.params,
                     query: routeMatch.query
                 });
+            } else if (typeof modInstance.load === 'function') {
+                await modInstance.load({
+                    params: routeMatch.params,
+                    query: routeMatch.query
+                });
             }
 
             this.invalidate();
+
         } catch (err) {
             console.error('Failed to load module for route:', def.name, err);
             // TODO: error modul / stránka
         }
     }
+
 
     /**
      * Vytvoří domvm view a namountuje app do DOM.
@@ -137,7 +161,9 @@ export class Application extends Component {
      * Helper pro přepnutí modulu.
      */
     async showModule(ModuleClass, params) {
+
         const mod = new ModuleClass(this);
+
         this.currentModule = mod;
 
         // pokud modul umí enter(), necháme ho načíst data
@@ -148,6 +174,7 @@ export class Application extends Component {
         }
 
         this.invalidate();
+
     }
 
     /**
@@ -165,6 +192,7 @@ export class Application extends Component {
     render(vm) {
 
         const body = [];
+        const el = defineElement;
 
         // jednoduchý header
         body.push(

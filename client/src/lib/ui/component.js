@@ -1,6 +1,6 @@
 // Component.js
 
-import { defineElement as el } from './rendering/domvm.js';
+import { defineElement } from 'domvm';
 import { Control } from "./control.js";
 
 export class Component extends Control {
@@ -27,6 +27,8 @@ export class Component extends Control {
     }
 
     render(vm) {
+
+        const el = defineElement;
 
         return el('div', this.children.reduce((vmnodes, child) => {
             const vmnode = child.render(vm);

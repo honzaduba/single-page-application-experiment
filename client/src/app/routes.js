@@ -4,7 +4,7 @@ const routes = [
     {
         name: 'login',
         path: '/login',
-        module: '/app/modules/login-module.js',
+        module: '/app/modules/login-module',
         export: 'LoginModule', // default by mohl být 'default', když nepřidáš
         public: true,
         title: 'Login uživatele'
@@ -12,7 +12,7 @@ const routes = [
     {
         name: 'user-profile',
         path: '/users/{id:num}/profile',
-        module: '/app/modules/user-profile-module.js',
+        module: '/app/modules/user-profile-module',
         export: 'UserProfileModule',
         privileges: ['open', 'browse', 'edit'],
         public: false,
@@ -21,9 +21,9 @@ const routes = [
     {
         name: 'hello',
         path: '/hello',
-        module: '/app/modules/hello-module.js',
+        module: '/app/modules/hello-module',
         export: 'HelloModule',
-        public: true,
+        public: false,
         title: 'Hello stránka'
     }
 ];

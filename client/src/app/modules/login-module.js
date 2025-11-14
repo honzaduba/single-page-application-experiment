@@ -1,7 +1,7 @@
 // modules/LoginModule.js
 
 import { Module } from '../../lib/ui/module.js';
-import { defineElement as el } from '../../lib/ui/rendering/domvm.js';
+import { defineElement } from 'domvm';
 
 export class LoginModule extends Module {
     constructor(parent) {
@@ -38,6 +38,8 @@ export class LoginModule extends Module {
     }
 
     render(vm) {
+
+        const el = defineElement;
         
         if (this.loading) {
             return el('div.login', 'Načítám...');

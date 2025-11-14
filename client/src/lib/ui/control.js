@@ -1,4 +1,4 @@
-import { defineElement as el } from './rendering/domvm.js';
+import { defineElement } from 'domvm';
 
 // Control.js
 export class Control {
@@ -30,6 +30,8 @@ export class Control {
      * @param {*} vm domvm viewmodel – můžeš ignorovat, když ho nepotřebuješ
      */
     render(vm) {
+
+        const el = defineElement;
 
         return el("div", [
             'Control'
