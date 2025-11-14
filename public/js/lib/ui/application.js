@@ -1,23 +1,35 @@
 // Application.js
 
-import { Component } from "./component.js";
-import { defineElement as el, createView } from "./rendering/domvm.js";
-import { Router } from "./routing/router.js";
+import { Component } from './component.js';
+import { defineElement as el, createView } from './rendering/domvm.js';
+import { Router } from './routing/router.js';
+import { config } from '../../config.js';
 
 export class Application extends Component {
 
-    constructor({ authService, apiService, routes }) {
+    constructor({
+        authService,
+        apiService,
+        routes,
+        defaultRoutes
+    }) {
 
         super({}); // Application nemá parent
 
         this._authService = authService;
         this._apiService = apiService;
 
+        defaultRoutes ??= {};
+
         this.router = new Router({
             app: this,
             authService,
             routes,
-            onRouteChange: (routeMatch) => this._handleRouteChange(routeMatch)
+            onRouteChange: (routeMatch) => this._handleRouteChange(routeMatch),
+            defaultRouteName: defaultRoutes.defaultRouteName,
+            loginRouteName: defaultRoutes.loginRouteName,
+            forbiddenRouteName: defaultRoutes.forbiddenRouteName,
+            notFoundRouteName: defaultRoutes.notFoundRouteName,
         });
 
         this._vm = null;          // domvm viewmodel
@@ -34,7 +46,7 @@ export class Application extends Component {
             // po logoutu znovu navolíme první public/accessible routu
             this.router.resetToDefaultRoute();
         });
-        
+
     }
 
     getApp() {
@@ -51,7 +63,8 @@ export class Application extends Component {
 
     start(rootElement) {
         this.mount(rootElement);
-        this.render();
+        this.router.start();
+        this.invalidate();
     }
 
     async _handleRouteChange(routeMatch) {
@@ -72,7 +85,7 @@ export class Application extends Component {
         }
 
         // lazy import modulu podle routeDef.module + export
-        const modulePath = def.module;
+        const modulePath = config.codeBasePath + def.module;
         const exportName = def.export || 'default';
 
         try {
@@ -121,15 +134,6 @@ export class Application extends Component {
     }
 
     /**
-     * Požádá domvm o překreslení.
-     */
-    redraw() {
-        if (!this._vm)
-            return;
-        this._vm.redraw();
-    }
-
-    /**
      * Helper pro přepnutí modulu.
      */
     async showModule(ModuleClass, params) {
@@ -143,13 +147,23 @@ export class Application extends Component {
             await mod.load(params);
         }
 
-        this.render();
+        this.invalidate();
+    }
+
+    /**
+     * Požádá domvm o překreslení.
+     */
+    invalidate() {
+        if (!this._vm)
+            return;
+        this._vm.redraw();
     }
 
     /**
      * Hlavní render celé aplikace – vrací v-tree.
      */
     render(vm) {
+
         const body = [];
 
         // jednoduchý header
@@ -180,5 +194,6 @@ export class Application extends Component {
         }
 
         return el("div.app-root", body);
+
     }
 }

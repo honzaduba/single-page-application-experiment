@@ -7,8 +7,7 @@ export class Control {
      * @param {Control|null} parent
      */
     constructor(parent = null, params = {}) {
-        if (!parent)
-            throw new Error('Parent is required.');
+        if (!parent) throw new Error('Control: "parent" (Control) is required.');
         this.parent = parent;
     }
 
@@ -22,8 +21,8 @@ export class Control {
     /**
      * Požádá parenta o překreslení.
      */
-    redraw() {
-        this.parent.redraw();
+    invalidate() {
+        this.parent.invalidate();
     }
 
     /**

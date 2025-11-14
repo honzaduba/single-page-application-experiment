@@ -4,7 +4,7 @@ import { RemoteService } from './lib/data/remote/remote-service.js';
 import { AuthService } from './lib/data/remote/auth-service.js';
 import { RemoteApiService } from './lib/data/remote/remote-api-service.js';
 import { MyApp } from './app/my-app.js';
-import { routes } from './app/routes.js';
+import { routes, defaultRoutes } from './app/routes.js';
 
 const remote = new RemoteService({
     baseUrl: 'http://localhost:3000'
@@ -25,7 +25,7 @@ const app = new MyApp({
     authService,
     apiService,
     routes,
-    // případně další domain služby, router, atd.
+    defaultRoutes
 });
 
 app.start(document.getElementById('app-root'));

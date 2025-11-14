@@ -38,6 +38,7 @@ export class LoginModule extends Module {
     }
 
     render(vm) {
+        
         if (this.loading) {
             return el('div.login', 'Načítám...');
         }

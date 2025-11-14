@@ -10,6 +10,7 @@ export class Router {
          * @param {string|null} [options.defaultRouteName]   - preferovaná default routa
          * @param {string|null} [options.loginRouteName]     - routa pro login
          * @param {string|null} [options.forbiddenRouteName] - routa pro 403
+         * @param {string|null} [options.notFoundRouteName]  - routa pro 404
          */
     constructor({
         app,
@@ -19,6 +20,7 @@ export class Router {
         defaultRouteName = null,
         loginRouteName = null,
         forbiddenRouteName = null,
+        notFoundRouteName = null,
     } = {}) {
 
         if (!app) throw new Error('Router: "app" (Application) is required.');
@@ -32,6 +34,7 @@ export class Router {
         this.defaultRouteName = defaultRouteName;
         this.loginRouteName = loginRouteName;
         this.forbiddenRouteName = forbiddenRouteName;
+        this.notFoundRouteName = notFoundRouteName;
 
         this.routes = routes.map(r => this._compileRoute(r));
         this.current = null;
@@ -61,7 +64,7 @@ export class Router {
     resetToDefaultRoute() {
         // 1) explicitně zadaná defaultní routa?
         if (this.defaultRouteName) {
-            const route = this.routes.find(r => r.def.name === this.defaultRouteName);
+            const route = this._findRoute(this.defaultRouteName);
             if (route && this._checkAccess(route.def).allowed) {
                 this.navigateByName(this.defaultRouteName);
                 return;
@@ -83,7 +86,8 @@ export class Router {
      * Navigace podle name + params + query.
      */
     navigateByName(name, params = {}, query = {}) {
-        const route = this.routes.find(r => r.def.name === name);
+
+        const route = this._findRoute(name);
         if (!route) {
             console.warn(`Route with name "${name}" not found.`);
             return;
@@ -93,16 +97,39 @@ export class Router {
         const full = this._attachQuery(path, query);
 
         window.location.hash = '#' + full;
+
     }
 
     /**
      * Získání URL (bez změny location).
      */
     urlFor(name, params = {}, query = {}) {
-        const route = this.routes.find(r => r.def.name === name);
+        const route = this._findRoute(name);
         if (!route) return null;
         const path = this._buildPath(route, params);
         return this._attachQuery(path, query);
+    }
+
+    /**
+     * Najde první routu s daným jménem.
+     */
+    _findRoute(name) {
+        const route = this.routes.find(r => r.def.name === name) ?? null;
+        return route;
+    }
+
+    /**
+     * Najde první routu, na kterou má uživatel přístup
+     * (bere aktuální stav authService).
+     */
+    _findFirstAccessibleRoute() {
+        for (const r of this.routes) {
+            const access = this._checkAccess(r.def);
+            if (access.allowed) {
+                return r;
+            }
+        }
+        return null;
     }
 
     // ----------------------------------------------------------
@@ -144,6 +171,39 @@ export class Router {
         }
 
         return true;
+    }
+
+    _handleNotFound(path) {
+
+        console.warn('Route not found for path:', path);
+        if (this.notFoundRouteName && this._findRoute(this.notFoundRouteName)) {
+            this.navigateByName(this.notFoundRouteName);
+            return;
+        }
+        // zkus najít nějakou použitelnou routu
+        this.resetToDefaultRoute();
+
+    }
+
+    _handleAccessDenied(routeDef, access) {
+
+        console.warn('Access denied:', routeDef.name, access.reason);
+
+        if (access.reason === 'unauthenticated' && this.loginRouteName) {
+
+            // přesměrování na login (s případným redirect parametrem)
+            this.navigateByName(this.loginRouteName, {}, { redirect: routeDef.path });
+
+        } else if (access.reason === 'forbidden' && this.forbiddenRouteName) {
+
+            this.navigateByName(this.forbiddenRouteName);
+
+        } else {
+
+            // fallback – opět zkusíme nějakou jinou routu
+            this.resetToDefaultRoute();
+
+        }
     }
 
     _matchPath(path) {
@@ -296,42 +356,6 @@ export class Router {
         }
 
         return { allowed: true, reason: 'ok' };
-    }
-
-     _handleNotFound(path) {
-        console.warn('Route not found for path:', path);
-        // zkus najít nějakou použitelnou routu
-        this.resetToDefaultRoute();
-    }
-
-    _handleAccessDenied(routeDef, access) {
-        console.warn('Access denied:', routeDef.name, access.reason);
-
-        if (access.reason === 'unauthenticated' && this.loginRouteName) {
-            // přesměrování na login (s případným redirect parametrem)
-            this.navigateByName(this.loginRouteName, {}, {
-                redirect: routeDef.path
-            });
-        } else if (access.reason === 'forbidden' && this.forbiddenRouteName) {
-            this.navigateByName(this.forbiddenRouteName);
-        } else {
-            // fallback – opět zkusíme nějakou jinou routu
-            this.resetToDefaultRoute();
-        }
-    }
-
-    /**
-     * Najde první routu, na kterou má uživatel přístup
-     * (bere aktuální stav authService).
-     */
-    _findFirstAccessibleRoute() {
-        for (const r of this.routes) {
-            const access = this._checkAccess(r.def);
-            if (access.allowed) {
-                return r;
-            }
-        }
-        return null;
     }
 
 }

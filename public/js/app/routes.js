@@ -8,7 +8,7 @@ const routes = [
         export: 'LoginModule', // default by mohl být 'default', když nepřidáš
         public: true,
         title: 'Login uživatele'
-    },    
+    },
     {
         name: 'user-profile',
         path: '/users/{id:num}/profile',
@@ -28,4 +28,12 @@ const routes = [
     }
 ];
 
-export { routes };
+const defaultRoutes = {
+    defaultRouteName: 'hello',
+    loginRouteName: 'login',
+    notFoundRouteName: 'error-not-found',
+    unauthorizedRouteName: 'error-unauthorized',
+    forbiddenRoutename: 'error-forbidden',
+};
+
+export { routes, defaultRoutes };
